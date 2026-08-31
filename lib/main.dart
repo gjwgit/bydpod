@@ -28,6 +28,7 @@
 
 library;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -106,12 +107,13 @@ class _BydpodAppState extends State<BydpodApp> {
         image: const AssetImage('assets/images/app_image.jpg'),
         logo: const AssetImage('assets/images/app_icon.png'),
         link: 'https://github.com/gjwgit/bydpod',
-        clientId: 'https://solidcommunity.au/apps/bydpod/client-profile.jsonld',
-        redirectUris: [
-          'https://solidcommunity.au/apps/bydpod/redirect.html',
-          'com.togaware.bydpod://redirect',
-          'http://localhost:4400/redirect',
-        ],
+        clientId: 'https://gjwgit.github.io/bydpod/client-profile.jsonld',
+        redirectUris: kIsWeb
+            ? ['${Uri.base.origin}/redirect.html']
+            : const [
+                'com.togaware.bydpod://redirect',
+                'http://localhost:4400/redirect.html',
+              ],
         // The listener is mounted once, inside MaterialApp, so a Pod write
         // that nothing is awaiting can still report its failure.
         child: SolidWriteFailureListener(

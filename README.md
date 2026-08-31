@@ -126,7 +126,7 @@ required setup takes about two minutes on a fresh install.
 
 ## Quick start
 
-1. **Install the Python library** — see [BYD Connect setup](#byd-setup)
+1. **Install the Python library** — see [BYD Connect setup](#byd-connect-setup)
    below. This is required for live vehicle data.
 2. **Log in to your Solid Pod** — tap the pod login button in the app bar and
    authenticate with your Pod provider.
@@ -275,8 +275,6 @@ BYD Connect phone app uses, via the community reverse-engineering work behind
 + [pybyd](https://github.com/jkaberg/pyBYD) — the Python client this app calls
 + [hass-byd-vehicle](https://github.com/jkaberg/hass-byd-vehicle) — the Home
   Assistant integration built on the same library
-+ [BYD-re](https://github.com/Niek/BYD-re) — notes on the app's request
-  encryption
 
 Two consequences follow. Fields can move or disappear when BYD updates its
 cloud, and nothing here is supported by BYD. Unrecognised fields are shown
@@ -435,7 +433,7 @@ any server other than the BYD Connect API during a live fetch.
 **Test Connection shows "Python + pybyd not found".**
 Install the library: `pip install pybyd --break-system-packages`
 or set up a venv at `~/.local/share/bydpod/venv` — see
-[BYD Connect setup](#byd-setup).
+[BYD Connect setup](#byd-connect-setup).
 
 **Test Connection shows "byd_fetch.py not found".**
 The script must sit next to the app binary. Copy it from the repository to the

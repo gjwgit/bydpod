@@ -1,6 +1,6 @@
 /// Main app scaffold with SolidScaffold, nav menu, app bar and actions.
 ///
-// Time-stamp: <Saturday 2026-04-04 22:01:39 +1100 Graham Williams>
+// Time-stamp: <Monday 2026-08-31 12:02:56 +1000 Graham Williams>
 ///
 /// Copyright (C) 2026, Togaware Pty Ltd
 ///
@@ -357,7 +357,7 @@ class _AppScaffoldState extends State<AppScaffold> {
             'with Solid Pod integration.\n\n'
             '$appDescription\n\n'
             'Vehicle data is fetched via the '
-            '[pybyd](https://github.com/BYD-Kia-Connect/pybyd) '
+            '[pybyd](https://github.com/jkaberg/pyBYD) '
             'Python library and can be archived to your personal Solid Pod.',
         applicationLegalese: '© 2026 Togaware Pty Ltd. GPL-3.0 Licence.',
       ),
