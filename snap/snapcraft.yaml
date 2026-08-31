@@ -91,7 +91,8 @@ parts:
       - libssl3
 
   # BydService looks for the BYD helper script in the executable's own
-  # directory, which for a snap is $SNAP/bin. Without this the snap builds
+  # directory. The command is `bydpod`, so that is $SNAP itself — keep the
+  # script at the top level, NOT under bin/. Without this the snap builds
   # fine but can never fetch live data.
   #
   # Note the snap is strictly confined and has no Python of its own, so the
@@ -102,5 +103,3 @@ parts:
     plugin: dump
     stage:
       - byd_fetch.py
-    organize:
-      byd_fetch.py: bin/byd_fetch.py
