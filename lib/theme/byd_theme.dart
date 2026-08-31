@@ -27,18 +27,34 @@ library;
 
 import 'package:flutter/material.dart';
 
+/// BYD Ocean series palette — the range the Sealion 7 belongs to: deep ocean
+/// navy hull, azure highlight, and greys tinted towards blue rather than the
+/// neutral/violet Material defaults.
+
 class BydColors {
-  static const Color primary = Color(0xFF002C5F);
-  static const Color accent = Color(0xFF00AAD2);
+  static const Color primary = Color(0xFF002B5C);
+  // Deeper hull navy, for the dark-theme app bar and surfaces that would
+  // otherwise sit too close to the primary.
+  static const Color primaryDeep = Color(0xFF001B3D);
+  static const Color accent = Color(0xFF00A0E9);
   static const Color white = Color(0xFFFFFFFF);
-  static const Color lightGrey = Color(0xFFF4F5F7);
-  static const Color midGrey = Color(0xFFB0B7C3);
-  static const Color darkGrey = Color(0xFF3D4451);
-  static const Color success = Color(0xFF00C896);
+  static const Color lightGrey = Color(0xFFEEF2F7);
+  static const Color midGrey = Color(0xFFA7B2C2);
+  static const Color darkGrey = Color(0xFF33405A);
+  static const Color success = Color(0xFF00C08B);
   static const Color warning = Color(0xFFFFB400);
   static const Color error = Color(0xFFE8003D);
   static const Color cardBg = Color(0xFFFFFFFF);
-  static const Color scaffoldBg = Color(0xFFF0F2F5);
+  static const Color scaffoldBg = Color(0xFFEDF1F7);
+
+  // Dark-theme ramp, all tinted navy so the dark app reads as the same brand
+  // as the light one.
+
+  static const Color darkScaffold = Color(0xFF0A1626);
+  static const Color darkSurface = Color(0xFF122033);
+  static const Color darkSurfaceHigh = Color(0xFF1B2C42);
+  static const Color darkOutline = Color(0xFF27394F);
+  static const Color darkBorder = Color(0xFF354A64);
 }
 
 ThemeData bydLightTheme() => bydTheme(Brightness.light);
@@ -51,11 +67,11 @@ ThemeData bydTheme([Brightness brightness = Brightness.light]) {
       ? const ColorScheme.dark(
           primary: BydColors.accent,
           secondary: BydColors.primary,
-          surface: Color(0xFF1E1E2E),
-          surfaceContainerHighest: Color(0xFF2A2A3E),
+          surface: BydColors.darkSurface,
+          surfaceContainerHighest: BydColors.darkSurfaceHigh,
           onSurface: Colors.white,
-          onSurfaceVariant: Color(0xFFB0B7C3),
-          outlineVariant: Color(0xFF3A3A52),
+          onSurfaceVariant: BydColors.midGrey,
+          outlineVariant: BydColors.darkOutline,
           error: BydColors.error,
         )
       : ColorScheme.fromSeed(
@@ -72,12 +88,12 @@ ThemeData bydTheme([Brightness brightness = Brightness.light]) {
     brightness: brightness,
     colorScheme: colorScheme,
     scaffoldBackgroundColor:
-        isDark ? const Color(0xFF12121E) : BydColors.scaffoldBg,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: BydColors.primary,
+        isDark ? BydColors.darkScaffold : BydColors.scaffoldBg,
+    appBarTheme: AppBarTheme(
+      backgroundColor: isDark ? BydColors.primaryDeep : BydColors.primary,
       foregroundColor: Colors.white,
       elevation: 0,
-      titleTextStyle: TextStyle(
+      titleTextStyle: const TextStyle(
         color: Colors.white,
         fontSize: 20,
         fontWeight: FontWeight.w700,
@@ -85,7 +101,7 @@ ThemeData bydTheme([Brightness brightness = Brightness.light]) {
       ),
     ),
     cardTheme: CardThemeData(
-      color: isDark ? const Color(0xFF1E1E2E) : BydColors.cardBg,
+      color: isDark ? BydColors.darkSurface : BydColors.cardBg,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
@@ -101,17 +117,17 @@ ThemeData bydTheme([Brightness brightness = Brightness.light]) {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: false,
-      fillColor: isDark ? const Color(0xFF2A2A3E) : BydColors.lightGrey,
+      fillColor: isDark ? BydColors.darkSurfaceHigh : BydColors.lightGrey,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: isDark
-            ? const BorderSide(color: Color(0xFF4A4A6A), width: 1)
+            ? const BorderSide(color: BydColors.darkBorder, width: 1)
             : BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: isDark
-            ? const BorderSide(color: Color(0xFF4A4A6A), width: 1)
+            ? const BorderSide(color: BydColors.darkBorder, width: 1)
             : BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
