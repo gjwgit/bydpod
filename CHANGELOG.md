@@ -35,13 +35,13 @@ This app is pair programmed by [Graham
 Williams](https://togaware.com/Graham.Williams.html) and [Claude
 Code](https://claude.com/product/claude-code).
 
-## 0.0 Initial BYD Release
+## 1.0 Initial BYD Release
 
-+ Seven-day consumption chart and drive-mode split [0.0.1 20260830 gjw]
++ Seven-day consumption chart and drive-mode split [1.0.4 20260830 gjw]
 + Warning lamps for brakes, ABS, airbags, stability, steering, drive
-  and charging systems [0.0.1 20260830 gjw]
-+ Country selector for BYD's regional servers [0.0.1 20260830 gjw]
+  and charging systems [1.0.3 20260830 gjw]
++ Country selector for BYD's regional servers [1.0.2 20260830 gjw]
 + Replace the Bluelink backend with pybyd for BYD Connect,
-  developed against a BYD Sealion 7 [0.0.1 20260830 gjw]
+  developed against a BYD Sealion 7 [1.0.1 20260830 gjw]
 + Forked from [konapod](https://github.com/gjwgit/konapod) 0.2.53,
-  which monitors the Hyundai Kona EV [0.0.1 20260830 gjw]
+  which monitors the Hyundai Kona EV [1.0.0 20260830 gjw]
