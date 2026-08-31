@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- BYD's regional API nodes all sit under byd.auto and are HTTPS only,
+         so cleartext stays disabled. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">byd.auto</domain>
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

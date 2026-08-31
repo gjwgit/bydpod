@@ -1,0 +1,234 @@
+/// App entry point: initialises providers, theme and SolidLogin wrapper.
+///
+// Time-stamp: <Wednesday 2026-06-10 15:07:23 +1000 Graham Williams>
+///
+/// Copyright (C) 2026, Togaware Pty Ltd
+///
+/// Licensed under the GNU General Public License, Version 3 (the "License");
+///
+/// License: https://opensource.org/license/gpl-3-0
+//
+// This program is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software
+// Foundation, either version 3 of the License, or (at your option) any later
+// version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+// details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program.  If not, see <https://opensource.org/license/gpl-3-0>.
+///
+/// Authors: Claude, Graham Williams
+
+// Add the library directive as we have doc entries above. We publish the above
+// meta doc lines in the docs.
+
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
+import 'package:solidui/solidui.dart';
+import 'package:window_manager/window_manager.dart';
+
+import 'package:bydpod/app_scaffold.dart';
+import 'package:bydpod/constants/app.dart';
+import 'package:bydpod/services/app_provider.dart';
+import 'package:bydpod/theme/byd_theme.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  // Initialise SolidUI security key manager to handle all user security key
+  // requests.
+
+  SolidSecurityKeyCentralManager.instance;
+
+  // Route the desktop window-close button through the app so an editor with
+  // unsaved changes can prompt to save rather than the edit being lost.
+
+  if (isDesktop) {
+    await windowManager.ensureInitialized();
+    await SolidWindowCloseGuard.enable();
+  }
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AppProvider(),
+      child: const BydpodApp(),
+    ),
+  );
+}
+
+class BydpodApp extends StatefulWidget {
+  const BydpodApp({super.key});
+  @override
+  State<BydpodApp> createState() => _BydpodAppState();
+}
+
+class _BydpodAppState extends State<BydpodApp> {
+  final _themeNotifier = SolidThemeNotifier();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load persisted theme and rebuild MaterialApp whenever it changes.
+    _themeNotifier.initialize();
+    _themeNotifier.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _themeNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: appName,
+      theme: bydLightTheme(),
+      darkTheme: bydDarkTheme(),
+      // Drive themeMode from SolidThemeNotifier so the toggle in
+      // SolidScaffold actually changes the app theme.
+      themeMode: _themeNotifier.themeMode,
+      // debugShowCheckedModeBanner: false,
+      home: SolidLogin(
+        required: false,
+        appDirectory: appDirectory,
+        title: appName.toUpperCase().replaceAll(' - ', '\n'),
+        image: const AssetImage('assets/images/app_image.jpg'),
+        logo: const AssetImage('assets/images/app_icon.png'),
+        link: 'https://github.com/gjwgit/bydpod',
+        clientId: 'https://solidcommunity.au/apps/bydpod/client-profile.jsonld',
+        redirectUris: [
+          'https://solidcommunity.au/apps/bydpod/redirect.html',
+          'com.togaware.bydpod://redirect',
+          'http://localhost:4400/redirect',
+        ],
+        // The listener is mounted once, inside MaterialApp, so a Pod write
+        // that nothing is awaiting can still report its failure.
+        child: SolidWriteFailureListener(
+          child: _AutoLoginWrapper(themeNotifier: _themeNotifier),
+        ),
+      ),
+    );
+  }
+}
+
+class _AutoLoginWrapper extends StatefulWidget {
+  final SolidThemeNotifier themeNotifier;
+  const _AutoLoginWrapper({required this.themeNotifier});
+  @override
+  State<_AutoLoginWrapper> createState() => _AutoLoginWrapperState();
+}
+
+class _AutoLoginWrapperState extends State<_AutoLoginWrapper> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final provider = context.read<AppProvider>();
+    // Always load the most recent snapshot from the pod on startup.
+    // BYD Connect is only queried when the user taps the refresh button.
+    // await provider.loadFromPod();
+    // Alternatively try saved BYD Connect credentials first and then fall
+    // back to the pod snapshot.
+    final hasByd = await provider.tryAutoLogin();
+    if (!hasByd) {
+      await provider.loadFromPod();
+    }
+    if (mounted) setState(() => _initialized = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return Scaffold(
+        backgroundColor: BydColors.primary,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: BydColors.accent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: Text(
+                    'H',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+              const Gap(20),
+              const Text(
+                appName,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Gap(32),
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white54,
+                  strokeWidth: 2,
+                ),
+              ),
+              const Gap(24),
+              Consumer<AppProvider>(
+                builder: (_, p, __) => p.keyringLocked
+                    ? Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 32),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          '⚠️  System keyring is locked.\n'
+                          'Credentials cannot be read.\n\n'
+                          'Fix: unlock the keyring then restart.\n'
+                          '  sudo apt install seahorse\n'
+                          '  seahorse  →  unlock Default keyring\n\n'
+                          'Or enter credentials manually after login.',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return AppScaffold(themeNotifier: widget.themeNotifier);
+  }
+}

@@ -1,0 +1,97 @@
+/// TyreTile widget showing tyre pressure warning status.
+///
+// Time-stamp: <Monday 2026-03-16 22:01:12 +1100 Graham Williams>
+///
+/// Copyright (C) 2026, Togaware Pty Ltd
+///
+/// Licensed under the GNU General Public License, Version 3 (the "License");
+///
+/// License: https://opensource.org/license/gpl-3-0
+//
+// This program is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software
+// Foundation, either version 3 of the License, or (at your option) any later
+// version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+// details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program.  If not, see <https://opensource.org/license/gpl-3-0>.
+///
+/// Authors: Claude, Graham Williams
+
+library;
+
+import 'package:flutter/material.dart';
+
+import 'package:gap/gap.dart';
+import 'package:markdown_tooltip/markdown_tooltip.dart';
+
+import 'package:bydpod/theme/byd_theme.dart';
+
+class TyreTile extends StatelessWidget {
+  final String label;
+  final bool? warning;
+  final String? pressure;
+  const TyreTile(this.label, this.warning, {super.key, this.pressure});
+  @override
+  Widget build(BuildContext context) {
+    final warn = warning == true;
+    final cs = Theme.of(context).colorScheme;
+
+    return MarkdownTooltip(
+      message: '**$label Tyre**\n\n'
+          'Tyre Pressure Monitoring System (TPMS) status.\n\n'
+          'Green = pressure within normal range. '
+          'Red/amber = pressure is too low or too high — '
+          'check and inflate to the recommended level '
+          '(usually shown on the driver\'s door jamb sticker).\n\n'
+          'Incorrect tyre pressure affects handling, fuel efficiency, '
+          'and tyre wear.',
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: warn
+              ? BydColors.error.withValues(alpha: 0.08)
+              : cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+          border: warn
+              ? Border.all(color: BydColors.error.withValues(alpha: 0.4))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              warn ? Icons.warning_amber : Icons.check_circle_outline,
+              color: warn ? BydColors.error : BydColors.success,
+              size: 16,
+            ),
+            const Gap(6),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: warn ? BydColors.error : cs.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (pressure != null)
+              Text(
+                pressure!,
+                style: TextStyle(
+                  color: warn ? BydColors.error : cs.onSurfaceVariant,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

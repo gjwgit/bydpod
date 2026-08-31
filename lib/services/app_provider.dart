@@ -1,0 +1,438 @@
+/// Central ChangeNotifier: manages vehicle state, data source and actions.
+///
+// Time-stamp: <Wednesday 2026-03-18 08:32:28 +1100 Graham Williams>
+///
+/// Copyright (C) 2026, Togaware Pty Ltd
+///
+/// Licensed under the GNU General Public License, Version 3 (the "License");
+///
+/// License: https://opensource.org/license/gpl-3-0
+//
+// This program is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software
+// Foundation, either version 3 of the License, or (at your option) any later
+// version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+// details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program.  If not, see <https://opensource.org/license/gpl-3-0>.
+///
+/// Authors: Claude, Graham Williams
+
+library;
+
+import 'package:flutter/foundation.dart';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'package:bydpod/models/battery_observation.dart';
+import 'package:bydpod/models/log_entry.dart';
+import 'package:bydpod/models/vehicle.dart';
+import 'package:bydpod/services/battery_observation_service.dart';
+import 'package:bydpod/services/byd_service.dart';
+import 'package:bydpod/services/pod_service.dart';
+
+enum AppState { idle, loading, loaded, error }
+
+enum DataSource { byd, pod, none }
+
+// Secure storage instance — shared across the app.
+const _storage = FlutterSecureStorage();
+
+class AppProvider extends ChangeNotifier {
+  final BydService _api = BydService();
+
+  AppState _state = AppState.idle;
+  String? _errorMessage;
+  List<Vehicle> _vehicles = [];
+  List<LogEntry> _logEntries = [];
+  int _selectedVehicleIndex = 0;
+  bool _isRefreshing = false;
+  bool _logLoading = false;
+  bool _keyringLocked = false;
+  DataSource _dataSource = DataSource.none;
+  String? _loadedFilename; // which pod file is currently loaded
+
+  AppState get state => _state;
+  String? get errorMessage => _errorMessage;
+  List<Vehicle> get vehicles => _vehicles;
+  bool get keyringLocked => _keyringLocked;
+  Vehicle? get selectedVehicle =>
+      _vehicles.isNotEmpty ? _vehicles[_selectedVehicleIndex] : null;
+  bool get isAuthenticated => _api.isAuthenticated;
+  String get country => _api.country;
+  bool get isRefreshing => _isRefreshing;
+  bool get logLoading => _logLoading;
+  DataSource get dataSource => _dataSource;
+  String? get loadedFilename => _loadedFilename;
+  bool get hasData => _vehicles.isNotEmpty;
+  List<LogEntry> get logEntries {
+    final sorted = [..._logEntries];
+    sorted.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return List.unmodifiable(sorted);
+  }
+
+  // ── Auto-login (desktop/byd) ────────────────────────────────────────
+
+  Future<bool> tryAutoLogin() async {
+    try {
+      final username = await _storage.read(key: 'byd_username');
+      final password = await _storage.read(key: 'byd_password');
+      final pin = await _storage.read(key: 'byd_pin');
+      final country = await _storage.read(key: 'byd_country');
+      if (username != null && password != null) {
+        return await login(
+          username: username,
+          password: password,
+          // The PIN is only needed for remote commands, which this app does
+          // not send, so an account saved without one still auto-logs in.
+          pin: pin ?? '',
+          country: country ?? defaultCountry,
+        );
+      }
+      return false;
+    } catch (e) {
+      // The system keyring may be locked on startup (common on a fresh Linux
+      // install where gnome-keyring-daemon hasn't been unlocked yet).
+      // Treat this as "no saved credentials" rather than crashing.
+      debugPrint('[AppProvider] tryAutoLogin keyring error: $e');
+      _keyringLocked = true;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> login({
+    required String username,
+    required String password,
+    required String pin,
+    String country = defaultCountry,
+  }) async {
+    _state = AppState.loading;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _api.login(
+        username: username,
+        password: password,
+        pin: pin,
+        country: country,
+      );
+      try {
+        await _storage.write(key: 'byd_username', value: username);
+        await _storage.write(key: 'byd_password', value: password);
+        await _storage.write(key: 'byd_pin', value: pin);
+        await _storage.write(key: 'byd_country', value: country);
+      } catch (e) {
+        // Keyring may still be locked — credentials aren't saved for next
+        // launch, but we can continue with the in-memory session.
+        debugPrint('[AppProvider] credential save skipped (keyring): $e');
+      }
+      _vehicles = await _api.getVehicles();
+      _selectedVehicleIndex = 0;
+      _dataSource = DataSource.byd;
+      _loadedFilename = null;
+      _state = AppState.loaded;
+      notifyListeners();
+      // Record battery observation in the background.
+      _recordBatteryObservation();
+      return true;
+    } on BydApiException catch (e) {
+      debugPrint('[AppProvider] BydApiException: ${e.message}');
+      _state = AppState.error;
+      _errorMessage = e.message;
+      notifyListeners();
+      return false;
+    } catch (e, st) {
+      debugPrint('[AppProvider] Unexpected error: $e\n$st');
+      _state = AppState.error;
+      _errorMessage = 'Error: ${e.runtimeType}\n$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ── Battery observation recording ────────────────────────────────────────
+
+  void _recordBatteryObservation() {
+    final v = selectedVehicle;
+    if (v == null) return;
+    final pct = v.batteryLevelPercent;
+    final range = v.evRangeKm;
+    if (pct == null || range == null) return;
+    final obs = BatteryObservation(
+      timestamp: v.lastUpdated ?? DateTime.now(),
+      batteryPct: pct,
+      rangeKm: range,
+      odometerKm: v.odometerKm,
+      remainKwh: v.batteryRemainKwh != null ? v.batteryRemainKwh! / 3600 : null,
+    );
+    BatteryObservationService.record(obs).then((error) {
+      if (error != null) {
+        debugPrint('[AppProvider] battery obs error: $error');
+      }
+    });
+  }
+
+  // ── Pod data loading ─────────────────────────────────────────────────────
+
+  Future<bool> loadFromPod() async {
+    _state = AppState.loading;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      // Load vehicle status and log entries independently — log entries
+      // should be available even if no vehicle snapshot exists yet.
+      final data = await PodService.loadLatestStatus();
+      await loadLogFromPod();
+
+      if (data == null) {
+        _state = AppState.error;
+        _errorMessage = 'No status data found on your Solid Pod.\n'
+            'Log in to BYD Connect and save a snapshot first.\n'
+            'Provide credentials under Settings for BYD Connect.\n'
+            'Alternatively ensure you have cached your Security Key.';
+        notifyListeners();
+        return false;
+      }
+      return _loadVehicleFromMap(data, source: DataSource.pod);
+    } catch (e, st) {
+      debugPrint('[AppProvider] loadFromPod error: $e\n$st');
+      _state = AppState.error;
+      _errorMessage = 'Pod load error: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> loadPodFile(String filename) async {
+    _state = AppState.loading;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final data = await PodService.loadStatusFile(filename);
+      if (data == null) {
+        _state = AppState.error;
+        _errorMessage = 'Could not load $filename from pod.';
+        notifyListeners();
+        return false;
+      }
+      _loadedFilename = filename;
+      return _loadVehicleFromMap(data, source: DataSource.pod);
+    } catch (e, st) {
+      debugPrint('[AppProvider] loadPodFile error: $e\n$st');
+      _state = AppState.error;
+      _errorMessage = 'Pod load error: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  bool _loadVehicleFromMap(
+    Map<String, dynamic> data, {
+    required DataSource source,
+  }) {
+    // data may be a single vehicle dict or {vehicles: [...]}
+    List<Map<String, dynamic>> rawList;
+    if (data.containsKey('vehicles')) {
+      rawList = (data['vehicles'] as List).cast<Map<String, dynamic>>();
+    } else {
+      rawList = [data];
+    }
+    if (rawList.isEmpty) {
+      _state = AppState.error;
+      _errorMessage = 'No vehicle data in file.';
+      notifyListeners();
+      return false;
+    }
+    _vehicles = rawList.map((r) => Vehicle.fromApiJson(r)).toList();
+    _selectedVehicleIndex = 0;
+    _dataSource = source;
+    _state = AppState.loaded;
+    notifyListeners();
+    // Record battery observation in the background (deduplication is handled
+    // by BatteryObservationService — pod snapshots often share the same reading).
+    _recordBatteryObservation();
+    return true;
+  }
+
+  // ── Export ───────────────────────────────────────────────────────────────
+
+  /// Returns the raw vehicle data map for JSON export.
+  /// Uses cached data from the last BYD Connect fetch if available,
+  /// otherwise serialises from the loaded vehicle model.
+  Future<Map<String, dynamic>?> getRawJsonForExport() async {
+    if (_vehicles.isEmpty) return null;
+    if (_dataSource == DataSource.byd) {
+      try {
+        return await _api.getRawVehicleJson();
+      } catch (_) {}
+    }
+    // Fall back: rebuild a map from the parsed Vehicle model
+    final v = selectedVehicle;
+    if (v == null) return null;
+    return {
+      'vehicleId': v.id,
+      'vin': v.vin,
+      'name': v.nickname,
+      'model': v.modelName,
+      'trim': v.trim,
+      'plate': v.plate,
+      'engine_type': v.fuelType,
+      'is_locked': v.isLocked,
+      'odometer': v.odometerKm,
+      'ev_battery_percentage': v.batteryLevelPercent,
+      'ev_driving_range': v.evRangeKm,
+      'ev_battery_is_charging': v.isChargingOn,
+      'ev_battery_is_plugged_in': v.isPluggedIn,
+      'efficiency_latest_trip': v.efficiencyLatestTrip,
+      'efficiency_recent_50km': v.efficiencySinceCharging,
+      'efficiency_overall': v.efficiencyOverall,
+      'total_driving_range': v.totalDrivenKm,
+      if (v.energyHistory != null) 'energy_history': v.energyHistory!.toJson(),
+      if (v.energyHistory?.distribution != null)
+        'drive_distribution': v.energyHistory!.distribution!.toJson(),
+      'last_updated_at': v.lastUpdated?.toIso8601String(),
+      'exportedAt': DateTime.now().toIso8601String(),
+      ...v.extras,
+    };
+  }
+
+  // ── Save to pod ──────────────────────────────────────────────────────────
+
+  Future<bool> saveToPod() async {
+    if (_vehicles.isEmpty) return false;
+    try {
+      final rawJson = await _api.getRawVehicleJson();
+      final error = await PodService.saveStatusWithIndex(rawJson);
+      if (error != null) {
+        _errorMessage = error;
+        notifyListeners();
+        return false;
+      }
+      return true;
+    } catch (e, st) {
+      debugPrint('[AppProvider] saveToPod error: $e\n$st');
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ── Refresh ──────────────────────────────────────────────────────────────
+
+  Future<void> refresh() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      if (_dataSource == DataSource.byd && isAuthenticated) {
+        await _api.refresh();
+        _vehicles = await _api.getVehicles();
+        _state = AppState.loaded;
+      } else if (_dataSource == DataSource.pod) {
+        await loadFromPod();
+      }
+    } on BydApiException catch (e) {
+      debugPrint('[AppProvider] refresh BydApiException: ${e.message}');
+      _errorMessage = e.message;
+      _state = AppState.error;
+    } catch (e, st) {
+      debugPrint('[AppProvider] refresh error: $e\n$st');
+      _errorMessage = e.toString();
+      _state = AppState.error;
+    }
+    _isRefreshing = false;
+    notifyListeners();
+  }
+
+  void selectVehicle(int index) {
+    _selectedVehicleIndex = index;
+    notifyListeners();
+  }
+
+  Future<void> logout() async {
+    await _storage.delete(key: 'byd_username');
+    await _storage.delete(key: 'byd_password');
+    await _storage.delete(key: 'byd_pin');
+    await _storage.delete(key: 'byd_country');
+    _api.logout();
+    _vehicles = [];
+    _state = AppState.idle;
+    _dataSource = DataSource.none;
+    notifyListeners();
+  }
+
+  void loadMockData() {
+    _vehicles = [Vehicle.mock()];
+    _dataSource = DataSource.none;
+    _state = AppState.loaded;
+    notifyListeners();
+  }
+
+  void clearLoadedFile() {
+    _loadedFilename = null;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // ── Log book ──────────────────────────────────────────────────────────────
+
+  void addLogEntry(LogEntry entry) {
+    _logEntries = [entry, ..._logEntries];
+    notifyListeners();
+  }
+
+  void updateLogEntry(LogEntry updated) {
+    _logEntries = [
+      for (final e in _logEntries) e.id == updated.id ? updated : e,
+    ];
+    notifyListeners();
+  }
+
+  void deleteLogEntry(String id) {
+    _logEntries = _logEntries.where((e) => e.id != id).toList();
+    notifyListeners();
+  }
+
+  Future<void> loadLogFromPod() async {
+    _logLoading = true;
+    notifyListeners();
+
+    try {
+      final raw = await PodService.loadLogEntries();
+      _logEntries = raw.map(LogEntry.fromJson).toList();
+    } catch (e) {
+      debugPrint('[AppProvider] loadLogFromPod error: $e');
+    } finally {
+      _logLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Write the log book to the Pod.
+  ///
+  /// Rethrows on failure: the log entry editor awaits this and must see the
+  /// error, otherwise it treats an entry that was never written as saved and
+  /// stops prompting for it when the window is closed.
+
+  Future<void> saveLogToPod() async {
+    try {
+      await PodService.saveLogEntries(
+        _logEntries.map((e) => e.toJson()).toList(),
+      );
+    } catch (e) {
+      debugPrint('[AppProvider] saveLogToPod error: $e');
+      rethrow;
+    }
+  }
+}

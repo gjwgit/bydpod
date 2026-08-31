@@ -1,0 +1,314 @@
+/// Legacy login screen (pre-SolidScaffold, kept for reference).
+///
+// Time-stamp: <Monday 2026-03-16 22:01:12 +1100 Graham Williams>
+///
+/// Copyright (C) 2026, Togaware Pty Ltd
+///
+/// Licensed under the GNU General Public License, Version 3 (the "License");
+///
+/// License: https://opensource.org/license/gpl-3-0
+//
+// This program is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software
+// Foundation, either version 3 of the License, or (at your option) any later
+// version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+// details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this program.  If not, see <https://opensource.org/license/gpl-3-0>.
+///
+/// Authors: Claude, Graham Williams
+
+library;
+
+import 'package:flutter/material.dart';
+
+import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
+
+import 'package:bydpod/screens/dashboard_screen.dart';
+import 'package:bydpod/services/app_provider.dart';
+import 'package:bydpod/theme/byd_theme.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _pinCtrl = TextEditingController();
+  bool _obscurePass = true;
+  bool _obscurePin = true;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    _pinCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+    final provider = context.read<AppProvider>();
+    final ok = await provider.login(
+      username: _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+      pin: _pinCtrl.text.trim(),
+    );
+    if (ok && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      );
+    }
+  }
+
+  void _demo() {
+    context.read<AppProvider>().loadMockData();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: BydColors.primary,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: BydColors.accent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'B',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Gap(24),
+                  const Text(
+                    'BYD Connect',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    'Sealion 7 · Vehicle Dashboard',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.65),
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: BydColors.scaffoldBg,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Sign in to your account',
+                          style: TextStyle(
+                            color: BydColors.darkGrey,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Gap(6),
+                        const Text(
+                          'Uses the pybyd Python library (needs Python '
+                          '3.11+).\nEnsure it is installed: pip install '
+                          'pybyd',
+                          style: TextStyle(
+                            color: BydColors.midGrey,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Gap(20),
+                        TextFormField(
+                          controller: _emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email address',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          validator: (v) => (v == null || !v.contains('@'))
+                              ? 'Enter a valid email'
+                              : null,
+                        ),
+                        const Gap(14),
+                        TextFormField(
+                          controller: _passCtrl,
+                          obscureText: _obscurePass,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePass
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscurePass = !_obscurePass),
+                            ),
+                          ),
+                          validator: (v) => (v == null || v.isEmpty)
+                              ? 'Enter your password'
+                              : null,
+                        ),
+                        const Gap(14),
+                        TextFormField(
+                          controller: _pinCtrl,
+                          obscureText: _obscurePin,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          decoration: InputDecoration(
+                            labelText: 'BYD Connect PIN (optional)',
+                            prefixIcon: const Icon(Icons.pin_outlined),
+                            counterText: '',
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePin
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscurePin = !_obscurePin),
+                            ),
+                          ),
+                          // The PIN is only needed for remote commands,
+                          // which this app never sends, so blank is valid.
+                          validator: (v) =>
+                              (v != null && v.isNotEmpty && v.length < 4)
+                                  ? 'A PIN must be at least 4 digits'
+                                  : null,
+                        ),
+                        const Gap(8),
+                        Consumer<AppProvider>(
+                          builder: (_, p, __) {
+                            if (p.errorMessage == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: BydColors.error.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: BydColors.error,
+                                    size: 18,
+                                  ),
+                                  const Gap(8),
+                                  Expanded(
+                                    child: Text(
+                                      p.errorMessage!,
+                                      style: const TextStyle(
+                                        color: BydColors.error,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        const Gap(16),
+                        Consumer<AppProvider>(
+                          builder: (_, p, __) {
+                            final loading = p.state == AppState.loading;
+                            return ElevatedButton(
+                              onPressed: loading ? null : _login,
+                              child: loading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Sign In'),
+                            );
+                          },
+                        ),
+                        const Gap(10),
+                        OutlinedButton(
+                          onPressed: _demo,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: BydColors.primary,
+                            side: const BorderSide(color: BydColors.primary),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Demo Mode (no login)'),
+                        ),
+                        const Gap(20),
+                        const Center(
+                          child: Text(
+                            'Credentials are saved locally on this device only.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: BydColors.midGrey,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
