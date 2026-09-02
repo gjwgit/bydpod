@@ -83,7 +83,9 @@ Future<void> runConnectionTest({
 
   // 1. Python with pybyd available?
   String? pythonCmd;
-  await tick('Python 3.11+ with pybyd found', () async {
+  // 20260902 gjw Labels name the CHECK, not its outcome — a label like
+  // 'pybyd found' reads as a contradiction beside the failure icon.
+  await tick('Python 3.11+ with pybyd', () async {
     final home = Platform.environment['HOME'] ?? '';
     final candidates = [
       '$home/.local/share/bydpod/venv/bin/python',
@@ -123,7 +125,7 @@ Future<void> runConnectionTest({
   final svc = BydService();
   String? scriptPath;
   await tick(
-    'byd_fetch.py found',
+    'byd_fetch.py script',
     () async {
       final path = svc.findScript();
       if (!File(path).existsSync()) {
@@ -144,7 +146,7 @@ Future<void> runConnectionTest({
 
   // 3. Credentials entered? The PIN is only needed for remote commands,
   // which this app does not send, so it is not required here.
-  await tick('Credentials entered', () async {
+  await tick('Credentials', () async {
     if (username.isEmpty || password.isEmpty) {
       return 'Email and password must both be filled in.';
     }
