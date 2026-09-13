@@ -12,7 +12,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -74,20 +73,26 @@ class _BackupScreenState extends State<BackupScreen> {
       }
 
       final stamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
-      final savePath = await FilePicker.saveFile(
+      // From file_picker 12 the picker writes the bytes itself and reports
+      // the destination as a Uri — a content:// one on Android, which has
+      // no file path to show. 20260912 gjw
+
+      final saved = await FilePicker.saveFile(
         dialogTitle: 'Save bydpod backup',
         fileName: 'bydpod-backup-$stamp.json',
+        bytes: utf8.encode(json),
+        mimeType: 'application/json',
         type: FileType.custom,
         allowedExtensions: ['json'],
       );
-      if (savePath == null) {
+      if (saved == null) {
         setState(() => _status = null);
         return;
       }
-      await File(savePath).writeAsBytes(utf8.encode(json));
       if (!mounted) return;
-      setState(() => _status = 'Backup saved to $savePath');
-      messenger.showSnackBar(SnackBar(content: Text('Saved to $savePath')));
+      final where = saved.isScheme('file') ? saved.toFilePath() : saved;
+      setState(() => _status = 'Backup saved to $where');
+      messenger.showSnackBar(SnackBar(content: Text('Saved to $where')));
     } catch (e) {
       if (!mounted) return;
       setState(() => _status = 'Export failed: $e');
@@ -129,22 +134,20 @@ class _BackupScreenState extends State<BackupScreen> {
       _status = 'Selecting backup file…';
     });
     try {
-      final result = await FilePicker.pickFiles(
+      // pickFile is file_picker 12's single-file picker, returning the file
+      // itself rather than a result wrapper, and the bytes are read from it
+      // on demand rather than through withData. 20260912 gjw
+
+      final file = await FilePicker.pickFile(
         dialogTitle: 'Select bydpod backup JSON',
         type: FileType.custom,
         allowedExtensions: ['json'],
-        withData: true,
       );
-      if (result == null || result.files.isEmpty) {
+      if (file == null) {
         setState(() => _status = null);
         return;
       }
-      final bytes = result.files.first.bytes;
-      if (bytes == null) {
-        if (!mounted) return;
-        setState(() => _status = 'Could not read file.');
-        return;
-      }
+      final bytes = await file.readAsBytes();
 
       setState(() => _status = 'Restoring data to your Pod…');
       final res = await BackupService.importAll(utf8.decode(bytes));

@@ -26,7 +26,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -79,18 +78,24 @@ class HistoryExport {
         return;
       }
 
-      final savePath = await FilePicker.saveFile(
+      // From file_picker 12 the picker writes the bytes itself and reports
+      // the destination as a Uri — a content:// one on Android, which has
+      // no file path to show. 20260912 gjw
+
+      final saved = await FilePicker.saveFile(
         dialogTitle: 'Save History as JSON',
         fileName: fileName,
+        bytes: utf8.encode(json),
+        mimeType: 'application/json',
         type: FileType.custom,
         allowedExtensions: ['json'],
       );
-      if (savePath == null) return;
-      await File(savePath).writeAsString(json);
+      if (saved == null) return;
       if (!context.mounted) return;
+      final where = saved.isScheme('file') ? saved.toFilePath() : saved;
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Saved ${snapshots.length} snapshots to $savePath'),
+          content: Text('Saved ${snapshots.length} snapshots to $where'),
         ),
       );
     } catch (e) {
@@ -109,21 +114,17 @@ class HistoryExport {
   static Future<void> importJson(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final result = await FilePicker.pickFiles(
+      // pickFile is file_picker 12's single-file picker, returning the file
+      // itself rather than a result wrapper, and the bytes are read from it
+      // on demand rather than through withData. 20260912 gjw
+
+      final file = await FilePicker.pickFile(
         dialogTitle: 'Select History JSON file',
         type: FileType.custom,
         allowedExtensions: ['json'],
-        withData: true,
       );
-      if (result == null || result.files.isEmpty) return;
-      final bytes = result.files.first.bytes;
-      if (bytes == null) {
-        if (!context.mounted) return;
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Could not read file.')),
-        );
-        return;
-      }
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
       final bundle = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
       final snapshots =
           (bundle['snapshots'] as List).cast<Map<String, dynamic>>();
@@ -173,7 +174,7 @@ class HistoryExport {
           build: (ctx) => [
             pw.Text(
               'BydPod - Vehicle Status History',
-              style: pw.TextStyle(
+              style: const pw.TextStyle(
                 fontSize: 18,
                 fontWeight: pw.FontWeight.bold,
               ),
@@ -202,7 +203,7 @@ class HistoryExport {
                         children: [
                           pw.Text(
                             _formatTitle(f),
-                            style: pw.TextStyle(
+                            style: const pw.TextStyle(
                               fontSize: 11,
                               fontWeight: pw.FontWeight.bold,
                             ),
@@ -235,17 +236,22 @@ class HistoryExport {
         return;
       }
 
-      final savePath = await FilePicker.saveFile(
+      final saved = await FilePicker.saveFile(
         dialogTitle: 'Save History as PDF',
         fileName: fileName,
+        bytes: pdfBytes,
+        mimeType: 'application/pdf',
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
-      if (savePath == null) return;
-      await File(savePath).writeAsBytes(pdfBytes);
+      if (saved == null) return;
       if (!context.mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Saved to $savePath')),
+        SnackBar(
+          content: Text(
+            'Saved to ${saved.isScheme('file') ? saved.toFilePath() : saved}',
+          ),
+        ),
       );
     } catch (e) {
       if (!context.mounted) return;
