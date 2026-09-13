@@ -39,6 +39,7 @@ Code](https://claude.com/product/claude-code).
 
 + Connection test steps now name the check rather than its outcome, so a
   failed step no longer reads as "found" [1.0.6 20260902 gjw]
++ Date-stamp comments at the start rather than the end [1.0.9 20260914 gjw]
 + Update to solidpod 1.0.22 and solidui 1.0.41 [1.0.8 20260914 gjw]
 + Remember the window size between sessions [1.0.7 20260913 gjw]
 + Updated themes/colour [1.0.5 20260831 gjw]

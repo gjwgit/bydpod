@@ -48,9 +48,9 @@ class LogbookExport {
         return;
       }
 
-      // From file_picker 12 the picker writes the bytes itself and reports
-      // the destination as a Uri — a content:// one on Android, which has
-      // no file path to show. 20260912 gjw
+      // 20260912 gjw From file_picker 12 the picker writes the bytes itself and
+      // reports the destination as a Uri — a content:// one on Android, which
+      // has no file path to show.
 
       final saved = await FilePicker.saveFile(
         dialogTitle: 'Save Log Book as JSON',
@@ -83,9 +83,9 @@ class LogbookExport {
   ) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      // pickFile is file_picker 12's single-file picker, returning the file
-      // itself rather than a result wrapper, and the bytes are read from it
-      // on demand rather than through withData. 20260912 gjw
+      // 20260912 gjw pickFile is file_picker 12's single-file picker, returning
+      // the file itself rather than a result wrapper, and the bytes are read
+      // from it on demand rather than through withData.
 
       final file = await FilePicker.pickFile(
         dialogTitle: 'Select Log Book JSON file',
