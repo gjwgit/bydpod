@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=BydPod
+Comment=Monitor your BYD Sealion 7 with your data kept in your Pod
+Exec=bydpod
+Icon=${SNAP}/meta/gui/icon.png
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=byd;sealion;ev;vehicle;battery;solid;pod;

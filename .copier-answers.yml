@@ -1,0 +1,44 @@
+# Changes here will be overwritten by Copier. Change a value with
+# `copier update --data key=value` or by editing it here and running
+# `copier update`.
+_commit: v0.8.6
+_src_path: gh:gjwgit/fluttertmpl
+kind: app
+android: true
+app: bydpod
+owner: gjwgit
+copyright: 2026, Togaware Pty Ltd
+publisher: Togaware Pty Ltd
+name: BydPod
+summary: A privacy preserving BYD Sealion 7 monitor
+comment: Monitor your BYD Sealion 7 with your data kept in your Pod
+categories:
+- Utility
+keywords:
+- byd
+- sealion
+- ev
+- vehicle
+- battery
+- solid
+- pod
+build: {}
+deb:
+  section: utils
+snap: {}
+flatpak: null
+windows:
+  appid: 47EC1248-FB6C-4DA7-9473-2FA9533F2A36
+install:
+  folder: /var/www/html/web/installers/
+  host: solidcommunity.au
+  prod: true
+  url: https://solidcommunity.au/installers/
+stores: {}
+description: |
+  BydPod monitors your BYD Sealion 7: live vehicle status from the BYD
+  API, a logbook for recording charges and drives, battery history
+  charts, and driving efficiency statistics.
+
+  All data is stored encrypted in your own personal online data store
+  (Pod) on the Solid server of your choice, under your control.

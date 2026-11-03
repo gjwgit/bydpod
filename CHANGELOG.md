@@ -4,22 +4,9 @@ Noted here are the high level changes for the app.  Each update
 includes a short user-oriented description.  The next release is 0.1
 following incremental updates through the 0.0.n series.
 
-You can run the app in your browser from the
-[**web**](https://bydpod.solidcommunity.au) or else download and
-install locally the latest version from the [Solid Community
-AU](https://solidcommunity.au) or directly: for **Android** as
-[aab](https://solidcommunity.au/installers/bydpod.aab) or
-[apk](https://solidcommunity.au/installers/bydpod.apk); for
-**GNU/Linux** as
-[deb](https://solidcommunity.au/installers/bydpod_amd64.deb) or
-[snap](https://solidcommunity.au/installers/bydpod_amd64.snap) or
-[zip](https://solidcommunity.au/installers/bydpod-linux.zip); for
-**macOS** as
-[dmg](https://solidcommunity.au/installers/bydpod-macos.dmg) or
-[zip](https://solidcommunity.au/installers/bydpod-macos.zip); for
-**Windows** as
-[exe](https://solidcommunity.au/installers/bydpod-windows-inno.exe)
-or [zip](https://solidcommunity.au/installers/bydpod-windows.zip).
+See the [Install
+Guide](https://gjwgit.github.io/bydpod/INSTALL.html) for
+installation instructions on any platform.
 
 Contributions are welcome. Visit
 [github](https://github.com/gjwgit/bydpod) to submit an issue or, even
@@ -34,6 +21,10 @@ then please show some ❤️ and tap on the star at
 This app is pair programmed by [Graham
 Williams](https://togaware.com/Graham.Williams.html) and [Claude
 Code](https://claude.com/product/claude-code).
+
+## 1.1 Migrate to using Copier for Templates
+
++ Move to copier [1.1.0 20261104 gjw]
 
 ## 1.0 Initial BYD Release
 

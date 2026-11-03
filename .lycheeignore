@@ -97,6 +97,11 @@ https://github.com/anusii/
 https://anusii.github.io/
 https://dev.empwr.au/mypod/
 https://server/alice/
+https://solid.dev.empwr.au/alice/profile/card#me
+https://solid.dev.empwr.au/Analyser
+https://www.heart.org/
+https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings
+https://solid.dev.empwr.au/bob/profile/card#me
 
 # 20260605 gjw Failing solid servers
 
@@ -108,7 +113,7 @@ https://raw.githubusercontent.com/gjwgit/geopod/dev/
 https://api.open-meteo.com/v1/forecast
 https://photon.komoot.io/api/
 
-# 20260619 gjw bydpod failures
+# 20260619 gjw konapod failures
 
 https://blog.kumo.dev/2024/05/22/reverse_engineering_hkg_apps.html
 
@@ -131,3 +136,19 @@ https://rdrr.io/rforge/tm/man/stopwords.html
 # 20260809 gjw foliopod
 
 https://query1.finance.yahoo.com/
+
+# 20260924 radiopod
+
+http://x
+https://live-radio01.mediahubaustralia.com/2FMW/mp3/
+http://live-radio01.mediahubaustralia.com/PBW/mp3/
+https://mediaserviceslive.akamaized.net/hls/live/newsradio.m3u8
+file:///home/me/feed.xml
+
+# 20260924 Locations that do not accept connection from githb
+
+https://snapcraft.io/
+
+# 20261029 gjw rolopod
+
+https://www.google.com/maps/

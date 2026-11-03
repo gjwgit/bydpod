@@ -45,7 +45,6 @@ from the [Solid Community AU](https://solidcommunity.au) repository:
 + **Web**
   [solidcommunity](https://bydpod.solidcommunity.au/);
 + **Android**
-  [aab](https://solidcommunity.au/installers/bydpod.aab) or
   [apk](https://solidcommunity.au/installers/bydpod.apk);
 + **GNU/Linux**
   [deb](https://solidcommunity.au/installers/bydpod_amd64.deb) or
