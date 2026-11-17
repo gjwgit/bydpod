@@ -97,8 +97,8 @@ Then set up your local installation (only required once):
 ln -s ${HOME}/.local/share/bydpod/bydpod ${HOME}/.local/bin/
 wget https://raw.githubusercontent.com/gjwgit/bydpod/dev/installers/app.desktop -O ${HOME}/.local/share/applications/bydpod.desktop
 sed -i "s/USER/$(whoami)/g" ${HOME}/.local/share/applications/bydpod.desktop
-mkdir -p ${HOME}/.local/share/icons/hicolor/256x256/apps/
-wget https://github.com/gjwgit/bydpod/raw/dev/installers/app.png -O ${HOME}/.local/share/icons/hicolor/256x256/apps/bydpod.png
+mkdir -p ${HOME}/.local/share/icons/hicolor/512x512/apps/
+wget https://github.com/gjwgit/bydpod/raw/dev/assets/images/app_icon_square.png -O ${HOME}/.local/share/icons/hicolor/512x512/apps/bydpod.png
 ```
 
 To install for any user on the computer:
@@ -107,7 +107,7 @@ To install for any user on the computer:
 sudo unzip bydpod-linux.zip -d /opt/bydpod
 sudo ln -s /opt/bydpod/bydpod /usr/local/bin/
 wget https://raw.githubusercontent.com/gjwgit/bydpod/dev/installers/app.desktop -O ${HOME}/usr/local/share/applications/bydpod.desktop
-wget https://github.com/gjwgit/bydpod/raw/dev/installers/app.png -O ${HOME}/use/local/share/icons/bydpod.png
+wget https://github.com/gjwgit/bydpod/raw/dev/assets/images/app_icon_square.png -O ${HOME}/use/local/share/icons/bydpod.png
 ```
 
 Once installed you can run the app from the GNOME desktop through
